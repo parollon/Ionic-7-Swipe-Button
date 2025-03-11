@@ -11,6 +11,8 @@ import { IonicModule } from '@ionic/angular';
 export class HomePage {
 
   @ViewChild('swipeButton', { read: ElementRef }) swipeButton!: ElementRef;
+  @ViewChild('swipeContainer', { read: ElementRef }) swipeContainer!: ElementRef;
+
   color = 'primary';
   text = 'Swipe';
 
@@ -18,11 +20,21 @@ export class HomePage {
   colWidth!: number;
   translateX!: number;
 
+  maxTranslate!: number;
+  startX!: number;
+
   constructor() {}
 
   @HostListener('touchstart', ['$event'])
   onTouchStart(event: TouchEvent) {
+    const computedStyle = window.getComputedStyle(this.swipeContainer.nativeElement);
+    const buttonWidth = this.swipeButton.nativeElement.offsetWidth;
+    const padding = parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight);
+    const trackButtonWidth = this.swipeContainer.nativeElement.offsetWidth -padding ;
+  
     this.swipeInProgress = true;
+    this.maxTranslate = trackButtonWidth- buttonWidth;
+    this.startX = event.touches[0].clientX;
   }
 
   @HostListener('touchmove', ['$event'])
@@ -30,9 +42,10 @@ export class HomePage {
     if (this.swipeInProgress) {
       const deltaX = event.touches[0].clientX;
       console.log('deltax: ', deltaX);
-      this.colWidth = this.swipeButton.nativeElement.parentElement.clientWidth;
-      console.log('colWidth: ', this.colWidth);
-      this.translateX = Math.min(deltaX, this.colWidth);
+      // this.colWidth = this.swipeButton.nativeElement.parentElement.clientWidth;
+      // console.log('colWidth: ', this.colWidth);
+      const diffX = deltaX - this.startX;
+      this.translateX = Math.max(0, Math.min(this.maxTranslate, diffX));
       console.log('translatex: ', this.translateX);
       this.swipeButton.nativeElement.style.transform = `translateX(${this.translateX}px)`;
     }
@@ -41,7 +54,7 @@ export class HomePage {
   @HostListener('touchend', ['$event'])
   async onTouchEnd(event: TouchEvent) {
     console.log(event);
-    if(this.translateX == this.colWidth) {
+    if(this.translateX >= this.maxTranslate *0.9) {
       console.log('swiped');
       this.text = 'Swiped';
       this.color = 'success';
